@@ -1,14 +1,13 @@
 // =========================================================
 // MATCHDAY — FULL APP (ADMIN + PLAYER)
 // DARK THEME VERSION — HARDCODED ADMIN EMAIL
+// Firebase SDK: v10+ modular (ES modules from CDN)
 // =========================================================
 
 // ------------------------
 // Firebase Modular SDK
 // ------------------------
-import { 
-  initializeApp 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
   getAuth,
@@ -42,7 +41,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ------------------------
-// YOUR FIREBASE CONFIG
+// YOUR FIREBASE CONFIG (from you)
 // ------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyDkzD-_MAZscUk1OTCTdI9tZHZfL4J_u-0",
@@ -54,286 +53,268 @@ const firebaseConfig = {
   measurementId: "G-R5M5NVBY92"
 };
 
-// Initialize
+// ------------------------
+// Initialize Firebase services
+// ------------------------
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Enable offline cache
+// Offline cache for Firestore (PWA-friendly)
 enableIndexedDbPersistence(db).catch(() => {
-  console.warn("Offline persistence unavailable.");
+  // Multiple tabs can cause this to fail — not fatal.
+  console.warn("Firestore offline persistence could not be enabled.");
 });
 
 // ------------------------
-// HARDCODED ADMIN EMAIL
+// Hardcoded Admin Email
 // ------------------------
 const ADMIN_EMAIL = "ikshihab2002@gmail.com";
 
 // ------------------------
-// DOM HELPER
+// DOM Helper
 // ------------------------
 const $ = (id) => document.getElementById(id);
 
 // Sections
-const loginSection = $("loginSection");
-const adminDashboard = $("adminDashboard");
-const playerDashboard = $("playerDashboard");
+const loginSection     = $("loginSection");
+const adminDashboard   = $("adminDashboard");
+const playerDashboard  = $("playerDashboard");
 
-// Login
-const emailEl = $("email");
-const passwordEl = $("password");
-const loginBtn = $("loginBtn");
-const signupBtn = $("signupBtn");
-const googleBtn = $("googleSignInBtn");
-const logoutBtn = $("logoutBtn");
-const logoutBtn2 = $("logoutBtn2");
+// Login elements
+const emailEl          = $("email");
+const passwordEl       = $("password");
+const loginBtn         = $("loginBtn");
+const signupBtn        = $("signupBtn");
+const googleBtn        = $("googleSignInBtn");
+const logoutBtn        = $("logoutBtn");
+const logoutBtn2       = $("logoutBtn2");
 
-// Admin inputs
-const matchDate = $("matchDate");
-const matchTime = $("matchTime");
-const matchLocation = $("matchLocation");
-const matchSlots = $("matchSlots");
-const matchStatus = $("matchStatus");
+// Admin controls
+const matchDate        = $("matchDate");
+const matchTime        = $("matchTime");
+const matchLocation    = $("matchLocation");
+const matchSlots       = $("matchSlots");
+const matchStatus      = $("matchStatus");
+const createMatchBtn   = $("createMatchBtn");
+const closeMatchBtn    = $("closeMatchBtn");
 
-const createMatchBtn = $("createMatchBtn");
-const closeMatchBtn = $("closeMatchBtn");
+const announcementInput    = $("announcementInput");
+const postAnnouncementBtn  = $("postAnnouncementBtn");
+const announcementListAdmin= $("announcementListAdmin");
 
-const announcementInput = $("announcementInput");
-const postAnnouncementBtn = $("postAnnouncementBtn");
-const announcementListAdmin = $("announcementListAdmin");
-
-const matchInfoAdmin = $("matchInfoAdmin");
+const matchInfoAdmin   = $("matchInfoAdmin");
 const bookingListAdmin = $("bookingListAdmin");
 
-// Player inputs
-const playerName = $("playerName");
-const playerContact = $("playerContact");
-const saveProfileBtn = $("saveProfileBtn");
+// Player controls
+const playerName       = $("playerName");
+const playerContact    = $("playerContact");
+const saveProfileBtn   = $("saveProfileBtn");
 
-const matchInfoPlayer = $("matchInfoPlayer");
+const matchInfoPlayer  = $("matchInfoPlayer");
 
-const bookingOptions = $("bookingOptions");
-const paymentMethod = $("paymentMethod");
-const paymentRef = $("paymentRef");
-const bkashInfo = $("bkashInfo");
+const bookingOptions   = $("bookingOptions");
+const paymentMethod    = $("paymentMethod");
+const paymentRef       = $("paymentRef");
+const bkashInfo        = $("bkashInfo");
 
-const bookSlotBtn = $("bookSlotBtn");
+const bookSlotBtn      = $("bookSlotBtn");
 const cancelBookingBtn = $("cancelBookingBtn");
 
-const bookedPlayersList = $("bookedPlayersList");
+const bookedPlayersList= $("bookedPlayersList");
 const announcementList = $("announcementList");
 
 // ------------------------
-// STATE
+// App State
 // ------------------------
-let currentUser = null;
-let isAdmin = false;
-let currentMatchId = null;
+let currentUser        = null;
+let isAdmin            = false;
+let currentMatchId     = null;
 
-let unsubscribeBookings = null;
-let unsubscribeAnnouncements = null;
+let unsubscribeBookings     = null;
+let unsubscribeAnnouncements= null;
 
 // ------------------------
-// UTIL FUNCTIONS
+// Utility helpers
 // ------------------------
 function showOnly(section) {
-  loginSection.hidden = true;
-  adminDashboard.hidden = true;
-  playerDashboard.hidden = true;
-
-  section.hidden = false;
+  if (loginSection)    loginSection.hidden = true;
+  if (adminDashboard)  adminDashboard.hidden = true;
+  if (playerDashboard) playerDashboard.hidden = true;
+  if (section)         section.hidden = false;
 }
 
 function notify(msg) {
+  // Replace with a nicer toast if you like
   alert(msg);
 }
 
 function formatTS(ts) {
   try {
-    if (ts?.toDate) return ts.toDate().toLocaleString();
-    return "";
+    if (!ts) return "";
+    if (typeof ts.toDate === "function") return ts.toDate().toLocaleString();
+    return new Date(ts).toLocaleString();
   } catch {
     return "";
   }
 }
 
 // ------------------------
-// AUTH LISTENER
+// Auth state listener
 // ------------------------
 onAuthStateChanged(auth, async (user) => {
   currentUser = user || null;
 
   if (!user) {
+    // Signed out → show login
     showOnly(loginSection);
     return;
   }
 
-  // Determine admin
+  // Role
   isAdmin = user.email === ADMIN_EMAIL;
 
   // Ensure profile exists
   await ensureProfile(user);
 
-  // Start monitoring announcements & match
-  startAnnouncements();
+  // Listeners
+  startAnnouncementsListener();
   await loadUpcomingMatch();
   await loadProfile();
 
-  // Show dashboard
+  // Show the right dashboard
   showOnly(isAdmin ? adminDashboard : playerDashboard);
 });
 
 // ------------------------
-// ENSURE USER PROFILE EXISTS
+// Ensure user profile exists in Firestore
 // ------------------------
 async function ensureProfile(user) {
-  const ref = doc(db, "users", user.uid);
-  const snap = await getDoc(ref);
-
+  const uref = doc(db, "users", user.uid);
+  const snap = await getDoc(uref);
   if (!snap.exists()) {
-    await setDoc(ref, {
+    await setDoc(uref, {
       email: user.email,
       name: user.displayName || "",
       contact: "",
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     });
   }
 }
 
 // ------------------------
-// LOGIN
+// Login / Signup / Google
 // ------------------------
-loginBtn.onclick = async () => {
-  const email = emailEl.value.trim();
-  const password = passwordEl.value.trim();
-
+loginBtn?.addEventListener("click", async () => {
+  const email = (emailEl.value || "").trim();
+  const password = (passwordEl.value || "").trim();
   if (!email || !password) return notify("Enter email and password.");
-
   try {
     await signInWithEmailAndPassword(auth, email, password);
-  } catch {
+  } catch (e) {
+    console.error(e);
     notify("Login failed.");
   }
-};
+});
 
-// ------------------------
-// SIGN UP
-// ------------------------
-signupBtn.onclick = async () => {
-  const email = emailEl.value.trim();
-  const password = passwordEl.value.trim();
-
-  if (email === ADMIN_EMAIL) return notify("This email is reserved for admin.");
-
+signupBtn?.addEventListener("click", async () => {
+  const email = (emailEl.value || "").trim();
+  const password = (passwordEl.value || "").trim();
   if (!email || !password) return notify("Enter email and password.");
-
+  if (email === ADMIN_EMAIL) return notify("This email is reserved for admin.");
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-
-    const name = prompt("Your name:");
-    const contact = prompt("Contact number:");
-
-    await updateProfile(cred.user, { displayName: name });
-
+    const name    = prompt("Your name:") || "";
+    const contact = prompt("Contact number:") || "";
+    if (name) await updateProfile(cred.user, { displayName: name });
     await setDoc(doc(db, "users", cred.user.uid), {
-      email,
-      name,
-      contact,
-      createdAt: serverTimestamp()
-    });
-
+      email, name, contact,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
     notify("Account created!");
-  } catch {
+  } catch (e) {
+    console.error(e);
     notify("Sign-up failed.");
   }
-};
+});
 
-// ------------------------
-// GOOGLE SIGN-IN (PLAYERS ONLY)
-// ------------------------
-googleBtn.onclick = async () => {
-  const prov = new GoogleAuthProvider();
-
+googleBtn?.addEventListener("click", async () => {
   try {
-    const res = await signInWithPopup(auth, prov);
-    if (res.user.email === ADMIN_EMAIL) {
+    const provider = new GoogleAuthProvider();
+    const res = await signInWithPopup(auth, provider);
+    const gUser = res.user;
+    if (gUser.email === ADMIN_EMAIL) {
       await signOut(auth);
       return notify("Admin cannot use Google login.");
     }
-    await ensureProfile(res.user);
-  } catch {
+    await ensureProfile(gUser);
+  } catch (e) {
+    console.error(e);
     notify("Google login failed.");
   }
-};
+});
+
+logoutBtn?.addEventListener("click", () => signOut(auth));
+logoutBtn2?.addEventListener("click", () => signOut(auth));
 
 // ------------------------
-// LOGOUT
-// ------------------------
-logoutBtn.onclick = () => signOut(auth);
-logoutBtn2.onclick = () => signOut(auth);
-
-// ------------------------
-// LOAD PLAYER PROFILE
+// Profile load/save
 // ------------------------
 async function loadProfile() {
   if (!currentUser) return;
-  const ref = doc(db, "users", currentUser.uid);
-  const snap = await getDoc(ref);
-  const d = snap.data();
-
-  playerName.value = d.name || "";
-  playerContact.value = d.contact || "";
+  const snap = await getDoc(doc(db, "users", currentUser.uid));
+  if (snap.exists()) {
+    const d = snap.data();
+    if (playerName)    playerName.value = d.name || "";
+    if (playerContact) playerContact.value = d.contact || "";
+  }
 }
 
-saveProfileBtn.onclick = async () => {
+saveProfileBtn?.addEventListener("click", async () => {
   if (!currentUser) return;
+  const name    = (playerName.value || "").trim();
+  const contact = (playerContact.value || "").trim();
   await updateDoc(doc(db, "users", currentUser.uid), {
-    name: playerName.value.trim(),
-    contact: playerContact.value.trim()
+    name, contact, updatedAt: serverTimestamp()
   });
   notify("Profile saved.");
-};
+});
 
 // ------------------------
-// ANNOUNCEMENTS
+// Announcements (real-time)
 // ------------------------
-function startAnnouncements() {
-  const qRef = query(
-    collection(db, "announcements"),
-    orderBy("createdAt", "desc")
-  );
-
+function startAnnouncementsListener() {
+  const qRef = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
   if (unsubscribeAnnouncements) unsubscribeAnnouncements();
-
   unsubscribeAnnouncements = onSnapshot(qRef, (snap) => {
     const target = isAdmin ? announcementListAdmin : announcementList;
+    if (!target) return;
     target.innerHTML = "";
-
     snap.forEach((docSnap) => {
-      const d = docSnap.data();
+      const a = docSnap.data();
       const li = document.createElement("li");
-      li.textContent = `${formatTS(d.createdAt)} — ${d.text}`;
+      li.textContent = `${formatTS(a.createdAt)} — ${a.text}`;
       target.appendChild(li);
     });
   });
 }
 
-postAnnouncementBtn.onclick = async () => {
-  if (!isAdmin) return;
-
-  const text = announcementInput.value.trim();
+postAnnouncementBtn?.addEventListener("click", async () => {
+  if (!isAdmin) return notify("Admins only.");
+  const text = (announcementInput.value || "").trim();
   if (!text) return;
-
   await addDoc(collection(db, "announcements"), {
     text,
-    createdAt: serverTimestamp()
+    createdAt: serverTimestamp(),
+    createdBy: currentUser?.uid || ""
   });
-
   announcementInput.value = "";
-};
+});
 
 // ------------------------
-// LOAD UPCOMING MATCH
+// Upcoming match (nearest open)
 // ------------------------
 async function loadUpcomingMatch() {
   const qRef = query(
@@ -343,193 +324,201 @@ async function loadUpcomingMatch() {
     orderBy("time", "asc"),
     limit(1)
   );
-
   const snap = await getDocs(qRef);
-
   if (snap.empty) {
-    matchInfoPlayer.textContent = "No upcoming match.";
-    matchInfoAdmin.textContent = "No upcoming match.";
-    bookingOptions.hidden = true;
+    if (matchInfoPlayer) matchInfoPlayer.textContent = "No upcoming match.";
+    if (matchInfoAdmin)  matchInfoAdmin.textContent  = "No upcoming match.";
+    if (bookingOptions)  bookingOptions.hidden = true;
+    if (bookedPlayersList) bookedPlayersList.innerHTML = "";
+    if (bookingListAdmin) bookingListAdmin.innerHTML = "";
+    currentMatchId = null;
     return;
   }
 
   const docSnap = snap.docs[0];
   currentMatchId = docSnap.id;
-
   const m = docSnap.data();
+
   const info = `📅 ${m.date}  ⏰ ${m.time}  📍 ${m.location} | Slots: ${m.slots}`;
+  if (matchInfoPlayer) matchInfoPlayer.textContent = info;
+  if (matchInfoAdmin)  matchInfoAdmin.textContent  = info;
 
-  matchInfoPlayer.textContent = info;
-  matchInfoAdmin.textContent = info;
+  // Start real-time bookings for this match
+  startBookingsListener();
 
-  startBookings();
+  // Update booking controls for current user
   updateBookingUI();
 }
 
 // ------------------------
-// ADMIN CREATE MATCH
+// Create/Close match (Admin)
 // ------------------------
-createMatchBtn.onclick = async () => {
-  if (!isAdmin) return;
+createMatchBtn?.addEventListener("click", async () => {
+  if (!isAdmin) return notify("Admins only.");
+  const date     = (matchDate.value || "").trim();
+  const time     = (matchTime.value || "").trim();
+  const location = (matchLocation.value || "").trim();
+  const slots    = Number(matchSlots.value || 0);
+  const status   = (matchStatus.value || "open").trim();
 
-  const date = matchDate.value;
-  const time = matchTime.value;
-  const loc = matchLocation.value.trim();
-  const slots = Number(matchSlots.value);
-  const status = matchStatus.value;
-
-  if (!date || !time || !loc || slots < 1) return notify("Fill all fields.");
+  if (!date || !time || !location || !slots || slots < 1) {
+    return notify("Please fill all match fields with valid values.");
+  }
 
   await addDoc(collection(db, "matches"), {
-    date,
-    time,
-    location: loc,
-    slots,
-    status,
+    date, time, location, slots, status,
     createdAt: serverTimestamp()
   });
 
-  notify("Match created!");
-};
+  notify("Match created.");
+  // Optional: clear inputs
+  if (matchDate) matchDate.value = "";
+  if (matchTime) matchTime.value = "";
+  if (matchLocation) matchLocation.value = "";
+  if (matchSlots) matchSlots.value = "";
+  if (matchStatus) matchStatus.value = "open";
 
-// ------------------------
-// CLOSE MATCH
-// ------------------------
-closeMatchBtn.onclick = async () => {
-  if (!isAdmin || !currentMatchId) return;
+  await loadUpcomingMatch();
+});
 
+closeMatchBtn?.addEventListener("click", async () => {
+  if (!isAdmin) return notify("Admins only.");
+  if (!currentMatchId) return notify("No open match to close.");
   await updateDoc(doc(db, "matches", currentMatchId), {
-    status: "closed"
+    status: "closed",
+    updatedAt: serverTimestamp()
   });
-
   notify("Match closed.");
-};
+  await loadUpcomingMatch();
+});
 
 // ------------------------
-// BOOKINGS LISTENER
+// Bookings (real-time list)
 // ------------------------
-function startBookings() {
+function startBookingsListener() {
   if (!currentMatchId) return;
+
+  if (unsubscribeBookings) unsubscribeBookings();
 
   const qRef = query(
     collection(db, "matches", currentMatchId, "bookings"),
     orderBy("createdAt", "asc")
   );
 
-  if (unsubscribeBookings) unsubscribeBookings();
-
   unsubscribeBookings = onSnapshot(qRef, async (snap) => {
-    bookedPlayersList.innerHTML = "";
-    bookingListAdmin.innerHTML = "";
+    if (bookedPlayersList) bookedPlayersList.innerHTML = "";
+    if (bookingListAdmin)  bookingListAdmin.innerHTML  = "";
 
     for (const d of snap.docs) {
       const b = d.data();
       const userSnap = await getDoc(doc(db, "users", b.uid));
-      const u = userSnap.data();
+      const u = userSnap.exists() ? userSnap.data() : { name: b.uid, contact: "" };
 
-      // Player list
-      const li = document.createElement("li");
-      li.textContent = `${u.name} — ${u.contact}`;
-      bookedPlayersList.appendChild(li);
+      // Player-facing list
+      if (bookedPlayersList) {
+        const li = document.createElement("li");
+        li.textContent = `${u.name || b.uid} — ${u.contact || ""}`;
+        bookedPlayersList.appendChild(li);
+      }
 
-      // Admin list
-      if (isAdmin) {
+      // Admin list with Kick button
+      if (isAdmin && bookingListAdmin) {
         const div = document.createElement("div");
         div.className = "bookingItem";
         div.innerHTML = `
-          <strong>${u.name}</strong> (${u.contact})<br>
-          <small>${b.paymentMethod}${b.paymentRef ? " — " + b.paymentRef : ""}</small>
-          <br>
-          <button class="danger small" data-uid="${b.uid}">Kick</button>
+          <strong>${u.name || b.uid}</strong> ${u.contact ? `(${u.contact})` : ""}
+          <small class="muted">${b.paymentMethod}${b.paymentRef ? " — " + b.paymentRef : ""}</small>
+          <div>
+            <button class="danger small" data-uid="${b.uid}">Kick</button>
+          </div>
         `;
         bookingListAdmin.appendChild(div);
       }
     }
 
-    if (isAdmin) {
-      document.querySelectorAll(".danger.small").forEach((btn) => {
-        btn.onclick = async () => {
-          const uid = btn.getAttribute("data-uid");
+    if (isAdmin && bookingListAdmin) {
+      bookingListAdmin.querySelectorAll("button.danger.small").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          const uid = e.currentTarget.getAttribute("data-uid");
+          if (!confirm("Remove this booking?")) return;
           await deleteDoc(doc(db, "matches", currentMatchId, "bookings", uid));
-        };
+        });
       });
     }
   });
 }
 
 // ------------------------
-// BOOKING UI LOGIC
+// Booking UI state
 // ------------------------
 async function updateBookingUI() {
-  if (!currentUser || !currentMatchId) return;
+  if (!currentUser || !currentMatchId) {
+    if (bookingOptions) bookingOptions.hidden = true;
+    return;
+  }
 
-  const ref = doc(db, "matches", currentMatchId, "bookings", currentUser.uid);
-  const snap = await getDoc(ref);
+  const myRef = doc(db, "matches", currentMatchId, "bookings", currentUser.uid);
+  const snap = await getDoc(myRef);
 
-  bookingOptions.hidden = false;
+  if (bookingOptions) bookingOptions.hidden = false;
 
-  if (paymentMethod.value === "bkash") {
-    bkashInfo.style.display = "block";
-    paymentRef.style.display = "block";
-  } else {
-    bkashInfo.style.display = "none";
-    paymentRef.style.display = "none";
+  // Toggle bKash info
+  if (bkashInfo && paymentRef && paymentMethod) {
+    const isBkash = paymentMethod.value === "bkash";
+    bkashInfo.style.display = isBkash ? "block" : "none";
+    paymentRef.style.display = isBkash ? "block" : "none";
   }
 
   if (snap.exists()) {
-    bookSlotBtn.disabled = true;
-    bookSlotBtn.textContent = "Already Booked";
-    cancelBookingBtn.disabled = false;
+    if (bookSlotBtn) {
+      bookSlotBtn.disabled = true;
+      bookSlotBtn.textContent = "Already Booked";
+    }
+    if (cancelBookingBtn) cancelBookingBtn.disabled = false;
   } else {
-    bookSlotBtn.disabled = false;
-    bookSlotBtn.textContent = "Book Slot";
-    cancelBookingBtn.disabled = true;
+    if (bookSlotBtn) {
+      bookSlotBtn.disabled = false;
+      bookSlotBtn.textContent = "Book Slot";
+    }
+    if (cancelBookingBtn) cancelBookingBtn.disabled = true;
   }
 }
 
-paymentMethod.onchange = () => updateBookingUI();
+paymentMethod?.addEventListener("change", updateBookingUI);
 
 // ------------------------
-// BOOK SLOT
+// Book slot
 // ------------------------
-bookSlotBtn.onclick = async () => {
-  if (!currentMatchId) return;
+bookSlotBtn?.addEventListener("click", async () => {
+  if (!currentUser) return notify("Not signed in.");
+  if (!currentMatchId) return notify("No open match to book.");
 
-  const method = paymentMethod.value;
-  const reference = paymentRef.value.trim();
+  const method = paymentMethod?.value || "onSpot";
+  const refID  = (paymentRef?.value || "").trim();
 
   try {
+    // Client-side transaction (best-effort). For heavy concurrency,
+    // move capacity enforcement into a Cloud Function.
     await runTransaction(db, async (tx) => {
       const matchRef = doc(db, "matches", currentMatchId);
       const mSnap = await tx.get(matchRef);
-
-      if (!mSnap.exists()) throw "Match missing.";
+      if (!mSnap.exists()) throw new Error("Match not found.");
 
       const m = mSnap.data();
-      if (m.status !== "open") throw "Match closed.";
+      if (m.status !== "open") throw new Error("Match is closed.");
 
-      // Count current bookings
-      const bSnap = await getDocs(
-        collection(db, "matches", currentMatchId, "bookings")
-      );
+      // Count current bookings (approximate)
+      const all = await getDocs(collection(db, "matches", currentMatchId, "bookings"));
+      if (all.size >= (m.slots || 0)) throw new Error("No slots left.");
 
-      if (bSnap.size >= m.slots) throw "No slots left.";
-
-      const myRef = doc(
-        db,
-        "matches",
-        currentMatchId,
-        "bookings",
-        currentUser.uid
-      );
-
-      const exists = await tx.get(myRef);
-      if (exists.exists()) throw "Already booked.";
+      const myRef = doc(db, "matches", currentMatchId, "bookings", currentUser.uid);
+      const mySnap = await tx.get(myRef);
+      if (mySnap.exists()) throw new Error("You already booked.");
 
       tx.set(myRef, {
         uid: currentUser.uid,
         paymentMethod: method,
-        paymentRef: reference,
+        paymentRef: refID,
         createdAt: serverTimestamp()
       });
     });
@@ -537,18 +526,18 @@ bookSlotBtn.onclick = async () => {
     notify("Booking successful!");
     updateBookingUI();
   } catch (e) {
-    notify(e);
+    console.error(e);
+    notify(e.message || String(e) || "Booking failed.");
   }
-};
+});
 
 // ------------------------
-// CANCEL BOOKING
+// Cancel booking
 // ------------------------
-cancelBookingBtn.onclick = async () => {
-  await deleteDoc(
-    doc(db, "matches", currentMatchId, "bookings", currentUser.uid)
-  );
-
-  notify("Booking cancelled.");
+cancelBookingBtn?.addEventListener("click", async () => {
+  if (!currentUser || !currentMatchId) return;
+  if (!confirm("Cancel your booking?")) return;
+  await deleteDoc(doc(db, "matches", currentMatchId, "bookings", currentUser.uid));
+  notify("Your booking was cancelled.");
   updateBookingUI();
-};
+});
