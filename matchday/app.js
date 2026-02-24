@@ -12,17 +12,26 @@ const db = firebase.firestore();
 
 let currentUser = null;
 
-// Admin email
+// Admin credentials
 const adminEmail = "ikshihab2002@gmail.com";
+const adminPassword = "01012002pdl";
 
 // --- Login ---
 document.getElementById("loginBtn").addEventListener("click", async () => {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
+  // Admin login check
+  if(email === adminEmail && password === adminPassword){
+    currentUser = {email: adminEmail, name: "Admin", uid: "admin"};
+    showAdminDashboard();
+    return;
+  }
+
+  // Player login
   const snapshot = await db.collection("users").where("email","==",email).get();
   if(snapshot.empty){
-    alert("User not found");
+    alert("User not found, please sign up first");
     return;
   }
   const user = snapshot.docs[0].data();
@@ -30,13 +39,38 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
     alert("Wrong password");
     return;
   }
-
   currentUser = {...user, uid: snapshot.docs[0].id};
-  if(user.email === adminEmail){
-    showAdminDashboard();
-  } else {
-    showPlayerDashboard();
+  showPlayerDashboard();
+});
+
+// --- Sign Up ---
+document.getElementById("signupBtn").addEventListener("click", async () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const name = prompt("Enter your name:");
+  const contact = prompt("Enter your contact number:");
+
+  if(!email || !password || !name || !contact){
+    alert("All fields are required!");
+    return;
   }
+
+  // Prevent signing up as admin
+  if(email === adminEmail){
+    alert("This email is reserved for admin!");
+    return;
+  }
+
+  // Check if user already exists
+  const snapshot = await db.collection("users").where("email","==",email).get();
+  if(!snapshot.empty){
+    alert("User already exists, please login");
+    return;
+  }
+
+  // Add new player to Firestore
+  await db.collection("users").add({email, password, name, contact});
+  alert("Sign-up successful! You can now login.");
 });
 
 // --- Admin Dashboard ---
@@ -44,19 +78,16 @@ function showAdminDashboard(){
   document.getElementById("loginSection").style.display="none";
   document.getElementById("adminDashboard").style.display="block";
 
-  // Create Match
   document.getElementById("createMatchBtn").onclick = async () => {
     const date = document.getElementById("matchDate").value;
     const time = document.getElementById("matchTime").value;
     const location = document.getElementById("matchLocation").value;
     const slots = parseInt(document.getElementById("matchSlots").value);
-
     await db.collection("matches").add({date, time, location, maxSlots: slots});
     alert("Match created!");
     loadBookings();
   };
 
-  // Post Announcement
   document.getElementById("postAnnouncementBtn").onclick = async () => {
     const text = document.getElementById("announcementInput").value;
     await db.collection("announcements").add({text, timestamp: Date.now()});
