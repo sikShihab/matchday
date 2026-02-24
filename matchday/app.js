@@ -1,104 +1,43 @@
-// 🔹 Firebase config (your project)
-const firebaseConfig = {
-  apiKey: "AIzaSyDkzD-_MAZscUk1OTCTdI9tZHZfL4J_u-0",
-  authDomain: "matchday-44a3c.firebaseapp.com",
-  projectId: "matchday-44a3c",
-  storageBucket: "matchday-44a3c.firebasestorage.app",
-  messagingSenderId: "810548681671",
-  appId: "1:810548681671:web:1483c2f2b0baa9b49cd7e2",
-  measurementId: "G-R5M5NVBY92"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// Elements
-const authSection = document.getElementById("authSection");
-const profileSection = document.getElementById("profileSection");
-const bookSection = document.getElementById("bookSection");
-
-// 🔹 Sign Up
-document.getElementById("signupBtn").addEventListener("click", () => {
-  const email = document.getElementById("emailInput").value;
-  const password = document.getElementById("passwordInput").value;
-
-  if(!email || !password) return alert("Enter email and password!");
-
-  auth.createUserWithEmailAndPassword(email, password)
-    .then(uc => {
-      const user = uc.user;
-      alert("Sign Up Successful!");
-      // Create default player profile
-      db.collection("players").doc(user.uid).set({
-        email: user.email, position: "", name: "", contact: "",
-        team: "", jersey: "", gamesPlayed: 0, goals: 0
-      });
-    })
-    .catch(err => alert(err.message));
-});
-
-// 🔹 Login
-document.getElementById("loginBtn").addEventListener("click", () => {
-  const email = document.getElementById("loginEmail").value;
-  const password = document.getElementById("loginPassword").value;
-
-  if(!email || !password) return alert("Enter email and password!");
-
-  auth.signInWithEmailAndPassword(email, password)
-    .then(() => alert("Login Successful!"))
-    .catch(err => alert(err.message));
-});
-
-// 🔹 Auth state listener
-auth.onAuthStateChanged(user => {
-  if (user) {
-    authSection.style.display = "none";
-    profileSection.style.display = "block";
-    bookSection.style.display = "block";
-
-    db.collection("players").doc(user.uid).get().then(doc => {
-      if(doc.exists){
-        const data = doc.data();
-        document.getElementById("nameInput").value = data.name;
-        document.getElementById("contactInput").value = data.contact;
-        document.getElementById("positionInput").value = data.position;
-        document.getElementById("teamInput").value = data.team;
-        document.getElementById("jerseyInput").value = data.jersey;
-        document.getElementById("gamesPlayed").innerText = `Games Played: ${data.gamesPlayed}`;
-        document.getElementById("goals").innerText = `Goals: ${data.goals}`;
-      }
-    });
-  } else {
-    authSection.style.display = "block";
-    profileSection.style.display = "none";
-    bookSection.style.display = "none";
-  }
-});
-
-// 🔹 Save Profile
+// Profile
 document.getElementById("saveProfileBtn").addEventListener("click", () => {
-  const user = auth.currentUser;
-  if(!user) return alert("Not logged in!");
-  db.collection("players").doc(user.uid).update({
+  const profile = {
     name: document.getElementById("nameInput").value,
     contact: document.getElementById("contactInput").value,
     position: document.getElementById("positionInput").value,
     team: document.getElementById("teamInput").value,
-    jersey: document.getElementById("jerseyInput").value
-  }).then(() => alert("Profile updated!"));
+    jersey: document.getElementById("jerseyInput").value,
+    gamesPlayed: document.getElementById("gamesPlayed").value,
+    goals: document.getElementById("goals").value
+  };
+  localStorage.setItem("playerProfile", JSON.stringify(profile));
+  alert("Profile saved locally!");
 });
 
-// 🔹 Book Match Slot
-document.getElementById("bookBtn").addEventListener("click", () => {
-  const user = auth.currentUser;
-  if(!user) return alert("Not logged in!");
-  const date = document.getElementById("matchDate").value;
-  const time = document.getElementById("matchTime").value;
-  const payment = document.getElementById("paymentMethod").value;
+// Load profile if exists
+window.addEventListener("load", () => {
+  const profile = JSON.parse(localStorage.getItem("playerProfile"));
+  if(profile){
+    document.getElementById("nameInput").value = profile.name;
+    document.getElementById("contactInput").value = profile.contact;
+    document.getElementById("positionInput").value = profile.position;
+    document.getElementById("teamInput").value = profile.team;
+    document.getElementById("jerseyInput").value = profile.jersey;
+    document.getElementById("gamesPlayed").value = profile.gamesPlayed;
+    document.getElementById("goals").value = profile.goals;
+  }
+});
 
-  db.collection("bookings").add({
-    userId: user.uid, date, time, payment, createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => alert(`Slot booked! Payment: ${payment}`));
+// Match Booking
+document.getElementById("bookBtn").addEventListener("click", () => {
+  const booking = {
+    date: document.getElementById("matchDate").value,
+    time: document.getElementById("matchTime").value,
+    payment: document.getElementById("paymentMethod").value
+  };
+  
+  let bookings = JSON.parse(localStorage.getItem("matchBookings") || "[]");
+  bookings.push(booking);
+  localStorage.setItem("matchBookings", JSON.stringify(bookings));
+  
+  alert(`Slot booked! Payment: ${booking.payment}`);
 });
