@@ -1,102 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MatchDay ⚽</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="logo.png">
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MatchDay ⚽</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="styles.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+
+<header>
+  <img src="logo.png" alt="MatchDay Logo" class="logo">
   <h1>MatchDay ⚽</h1>
+</header>
 
-  <!-- Sign Up Form -->
-  <div id="signupForm">
-    <input type="email" id="emailInput" placeholder="Email">
-    <input type="password" id="passwordInput" placeholder="Password">
-    <button id="signupBtn">Sign Up</button>
-  </div>
+<section id="authSection">
+  <h2>Sign Up</h2>
+  <input type="email" id="emailInput" placeholder="Email">
+  <input type="password" id="passwordInput" placeholder="Password">
+  <button id="signupBtn">Sign Up</button>
 
-  <!-- Login Form -->
-  <div id="loginForm">
-    <input type="email" id="loginEmail" placeholder="Email">
-    <input type="password" id="loginPassword" placeholder="Password">
-    <button id="loginBtn">Login</button>
-  </div>
+  <h2>Login</h2>
+  <input type="email" id="loginEmail" placeholder="Email">
+  <input type="password" id="loginPassword" placeholder="Password">
+  <button id="loginBtn">Login</button>
+</section>
 
-  <script>
-    // 🔹 Firebase config (your real config)
-    const firebaseConfig = {
-      apiKey: "AIzaSyDkzD-_MAZscUk1OTCTdI9tZHZfL4J_u-0",
-      authDomain: "matchday-44a3c.firebaseapp.com",
-      projectId: "matchday-44a3c",
-      storageBucket: "matchday-44a3c.firebasestorage.app",
-      messagingSenderId: "810548681671",
-      appId: "1:810548681671:web:1483c2f2b0baa9b49cd7e2",
-      measurementId: "G-R5M5NVBY92"
-    };
+<section id="profileSection" style="display:none;">
+  <h2>Your Profile</h2>
+  <input type="text" id="nameInput" placeholder="Name">
+  <input type="text" id="contactInput" placeholder="Contact">
+  <input type="text" id="positionInput" placeholder="Position">
+  <input type="text" id="teamInput" placeholder="Team (optional)">
+  <input type="text" id="jerseyInput" placeholder="Jersey Number (optional)">
+  <input type="file" id="photoInput" accept="image/*">
+  <button id="saveProfileBtn">Save Profile</button>
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+  <h3>Stats</h3>
+  <p id="gamesPlayed">Games Played: 0</p>
+  <p id="goals">Goals: 0</p>
+</section>
 
-    // 🔹 Sign Up
-    document.getElementById("signupBtn").addEventListener("click", function() {
-      const email = document.getElementById("emailInput").value;
-      const password = document.getElementById("passwordInput").value;
+<section id="bookSection" style="display:none;">
+  <h2>Book Your Match Slot</h2>
+  <input type="date" id="matchDate">
+  <input type="time" id="matchTime">
+  <select id="paymentMethod">
+    <option value="bkash">bKash</option>
+    <option value="onSpot">On Spot Cash</option>
+  </select>
+  <button id="bookBtn">Book Slot</button>
+</section>
 
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          const user = userCredential.user;
-          alert("Sign Up Successful!");
-
-          // Create default player profile in Firestore
-          db.collection("players").doc(user.uid).set({
-            email: user.email,
-            position: "",   // player can update later
-            name: "",
-            contact: "",
-            team: "",
-            jersey: "",
-            gamesPlayed: 0,
-            goals: 0,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-        })
-        .catch(error => {
-          alert(error.message);
-          console.error(error);
-        });
-    });
-
-    // 🔹 Login
-    document.getElementById("loginBtn").addEventListener("click", function() {
-      const email = document.getElementById("loginEmail").value;
-      const password = document.getElementById("loginPassword").value;
-
-      auth.signInWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          alert("Login Successful!");
-          console.log(userCredential.user);
-          // Redirect to dashboard or profile page
-        })
-        .catch(error => {
-          alert(error.message);
-          console.error(error);
-        });
-    });
-
-    // Optional: Detect logged-in user
-    auth.onAuthStateChanged(user => {
-      if(user) {
-        console.log("User is logged in:", user.email);
-        // Show dashboard/profile
-      }
-    });
-  </script>
+<script src="app.js"></script>
 </body>
 </html>
