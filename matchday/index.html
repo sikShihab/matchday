@@ -6,38 +6,52 @@
 <title>MatchDay ⚽</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="logo.png">
-<link rel="stylesheet" href="styles.css">
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+header { text-align: center; }
+nav button { margin: 5px; padding: 10px; cursor: pointer; }
+section { margin: 20px 0; display: none; }
+input, select, button { display: block; margin: 10px 0; padding: 8px; width: 100%; max-width: 300px; }
+button { cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
+button:hover { background-color: #0056b3; }
+</style>
 </head>
 <body>
 
 <header>
-  <img src="logo.png" alt="MatchDay Logo" class="logo">
+  <img src="logo.png" alt="MatchDay Logo" style="width:80px;">
   <h1>MatchDay ⚽</h1>
 </header>
 
+<nav>
+  <button id="homeBtn">Home</button>
+  <button id="checkMatchBtn">Check Match</button>
+</nav>
+
 <section id="profileSection">
-  <h2>Your Profile</h2>
+  <h2>Create / Edit Profile</h2>
   <input type="text" id="nameInput" placeholder="Name">
   <input type="text" id="contactInput" placeholder="Contact">
   <input type="text" id="positionInput" placeholder="Position">
   <input type="text" id="teamInput" placeholder="Team (optional)">
   <input type="text" id="jerseyInput" placeholder="Jersey Number (optional)">
-  <button id="saveProfileBtn">Save Profile</button>
-
-  <h3>Stats</h3>
   <input type="number" id="gamesPlayed" placeholder="Games Played">
   <input type="number" id="goals" placeholder="Goals">
+  <button id="saveProfileBtn">Save Profile</button>
 </section>
 
-<section id="bookSection">
-  <h2>Book Your Match Slot</h2>
-  <input type="date" id="matchDate">
-  <input type="time" id="matchTime">
-  <select id="paymentMethod">
-    <option value="bkash">bKash</option>
-    <option value="onSpot">On Spot Cash</option>
-  </select>
-  <button id="bookBtn">Book Slot</button>
+<section id="matchSection">
+  <h2>Match Booking</h2>
+  <p id="matchInfo"></p>
+  <div id="bookingOptions" style="display:none;">
+    <input type="date" id="matchDate">
+    <input type="time" id="matchTime">
+    <select id="paymentMethod">
+      <option value="bkash">bKash</option>
+      <option value="onSpot">On Spot Cash</option>
+    </select>
+    <button id="bookBtn">Book Slot</button>
+  </div>
 </section>
 
 <script src="app.js"></script>
