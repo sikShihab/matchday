@@ -80,9 +80,8 @@ const ADMIN_EMAIL = "ikshihab2002@gmail.com";
  * - After successful bootstrap: set SETUP_MODE=false and redeploy.
  ************************************************************/
 
-// 🚨 Set TRUE only for one-time bootstrap; then set to FALSE and redeploy.
-const SETUP_MODE = true;
-const ADMIN_INIT_PASSWORD = "01012002pdl";   // desired admin password
+// 🚨 Keep FALSE in production. Enable temporarily only for one-time bootstrap.
+const SETUP_MODE = false;
 
 // Optional buttons (add to index.html if desired)
 const bootstrapAdminBtn = document.getElementById("bootstrapAdminBtn");
@@ -98,8 +97,15 @@ async function bootstrapCreateAdmin() {
     alert("Setup mode is disabled. Edit app.js to enable (SETUP_MODE=true) for one-time bootstrap.");
     return;
   }
+
+  const initPassword = prompt("Enter a temporary admin password (minimum 6 characters):")?.trim() || "";
+  if (initPassword.length < 6) {
+    alert("Password must be at least 6 characters.");
+    return;
+  }
+
   try {
-    const cred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_INIT_PASSWORD);
+    const cred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, initPassword);
     try { await updateProfile(cred.user, { displayName: "Admin" }); } catch {}
     try {
       await setDoc(doc(db, "users", cred.user.uid), {
@@ -129,7 +135,7 @@ async function sendAdminReset() {
   try {
     await sendPasswordResetEmail(auth, ADMIN_EMAIL);
     alert(`Password reset email sent to ${ADMIN_EMAIL}.
-Open the link and set your password (e.g., ${ADMIN_INIT_PASSWORD}).`);
+Open the link and set your password.`);
   } catch (e) {
     console.error("Reset admin password error:", e.code, e.message);
     alert(`Failed to send reset email: ${e.code || e.message}`);
@@ -140,8 +146,10 @@ bootstrapAdminBtn?.addEventListener("click", bootstrapCreateAdmin);
 resetAdminBtn?.addEventListener("click", sendAdminReset);
 
 // Expose helpers for DevTools
-window.__createAdmin = bootstrapCreateAdmin;
-window.__resetAdmin  = sendAdminReset;
+if (SETUP_MODE) {
+  window.__createAdmin = bootstrapCreateAdmin;
+  window.__resetAdmin  = sendAdminReset;
+}
 
 // ------------------------
 // DOM Helper
@@ -234,7 +242,7 @@ onAuthStateChanged(auth, async (user) => {
 
   if (!user) { showOnly(loginSection); return; }
 
-  isAdmin = user.email === ADMIN_EMAIL;
+  isAdmin = (user.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   await ensureProfile(user);
 
@@ -297,7 +305,7 @@ googleBtn?.addEventListener("click", async () => {
     const provider = new GoogleAuthProvider();
     const res = await signInWithPopup(auth, provider);
     const gUser = res.user;
-    if (gUser.email === ADMIN_EMAIL) { await signOut(auth); return notify("Admin cannot use Google login."); }
+    if ((gUser.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase()) { await signOut(auth); return notify("Admin cannot use Google login."); }
     await ensureProfile(gUser);
   } catch (e) { console.error(e); notify("Google login failed."); }
 });
@@ -449,13 +457,28 @@ function startBookingsListener() {
       if (isAdmin && bookingListAdmin) {
         const div = document.createElement("div");
         div.className = "bookingItem";
-        div.innerHTML = `
-          <strong>${u.name || b.uid}</strong> ${u.contact ? `(${u.contact})` : ""}
-          <small class="muted">${b.paymentMethod}${b.paymentRef ? " — " + b.paymentRef : ""}</small>
-          <div>
-            <button class="danger small" data-uid="${b.uid}">Kick</button>
-          </div>
-        `;
+
+        const title = document.createElement("strong");
+        title.textContent = u.name || b.uid;
+        div.appendChild(title);
+
+        if (u.contact) {
+          div.appendChild(document.createTextNode(` (${u.contact})`));
+        }
+
+        const payment = document.createElement("small");
+        payment.className = "muted";
+        payment.textContent = `${b.paymentMethod}${b.paymentRef ? " — " + b.paymentRef : ""}`;
+        div.appendChild(payment);
+
+        const actions = document.createElement("div");
+        const kickBtn = document.createElement("button");
+        kickBtn.className = "danger small";
+        kickBtn.setAttribute("data-uid", b.uid);
+        kickBtn.textContent = "Kick";
+        actions.appendChild(kickBtn);
+        div.appendChild(actions);
+
         bookingListAdmin.appendChild(div);
       }
     }
