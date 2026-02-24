@@ -7,10 +7,6 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="logo.png">
 <link rel="stylesheet" href="styles.css">
-<!-- Firebase JS SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -19,34 +15,21 @@
   <h1>MatchDay ⚽</h1>
 </header>
 
-<section id="authSection">
-  <h2>Sign Up</h2>
-  <input type="email" id="emailInput" placeholder="Email">
-  <input type="password" id="passwordInput" placeholder="Password">
-  <button id="signupBtn">Sign Up</button>
-
-  <h2>Login</h2>
-  <input type="email" id="loginEmail" placeholder="Email">
-  <input type="password" id="loginPassword" placeholder="Password">
-  <button id="loginBtn">Login</button>
-</section>
-
-<section id="profileSection" style="display:none;">
+<section id="profileSection">
   <h2>Your Profile</h2>
   <input type="text" id="nameInput" placeholder="Name">
   <input type="text" id="contactInput" placeholder="Contact">
   <input type="text" id="positionInput" placeholder="Position">
   <input type="text" id="teamInput" placeholder="Team (optional)">
   <input type="text" id="jerseyInput" placeholder="Jersey Number (optional)">
-  <input type="file" id="photoInput" accept="image/*">
   <button id="saveProfileBtn">Save Profile</button>
 
   <h3>Stats</h3>
-  <p id="gamesPlayed">Games Played: 0</p>
-  <p id="goals">Goals: 0</p>
+  <input type="number" id="gamesPlayed" placeholder="Games Played">
+  <input type="number" id="goals" placeholder="Goals">
 </section>
 
-<section id="bookSection" style="display:none;">
+<section id="bookSection">
   <h2>Book Your Match Slot</h2>
   <input type="date" id="matchDate">
   <input type="time" id="matchTime">
