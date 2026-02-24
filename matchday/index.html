@@ -6,6 +6,10 @@
 <title>MatchDay ⚽</title>
 <link rel="icon" href="logo.png">
 <link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#007bff">
+
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 </head>
@@ -67,5 +71,14 @@
 </section>
 
 <script src="app.js"></script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js')
+    .then(() => console.log("Service Worker registered"))
+    .catch(err => console.log("SW registration failed", err));
+}
+</script>
+
 </body>
 </html>
