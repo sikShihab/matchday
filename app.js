@@ -71,6 +71,86 @@ enableIndexedDbPersistence(db).catch(() => {
 // ------------------------
 const ADMIN_EMAIL = "ikshihab2002@gmail.com";
 
+/************************************************************
+ * ADMIN BOOTSTRAP (ONE-TIME) — add to existing app.js
+ * - Create the admin account with a chosen password (once).
+ * - Or send a reset email if the admin already exists.
+ * - After successful bootstrap: set SETUP_MODE=false and redeploy.
+ ************************************************************/
+
+// Already in your file: const ADMIN_EMAIL = "ikshihab2002@gmail.com";
+// Keep it as-is. Now add:
+const SETUP_MODE = true;                     // ⛔ Set TRUE only for the one-time bootstrap. Then set to FALSE.
+const ADMIN_INIT_PASSWORD = "01012002pdl";   // The desired admin password
+
+// Optional: If you added buttons in index.html with these IDs, we'll wire them.
+// If not, you can call the functions from console: window.__createAdmin(), window.__resetAdmin()
+const bootstrapAdminBtn = document.getElementById("bootstrapAdminBtn");
+const resetAdminBtn     = document.getElementById("resetAdminBtn");
+
+// Show/Hide the bootstrap button based on SETUP_MODE (safe guard)
+if (bootstrapAdminBtn) {
+  bootstrapAdminBtn.style.display = SETUP_MODE ? "block" : "none";
+}
+
+// --- One-time Admin Creation (runs only if SETUP_MODE === true) ---
+async function bootstrapCreateAdmin() {
+  if (!SETUP_MODE) {
+    alert("Setup mode is disabled. Edit app.js to enable (SETUP_MODE=true) for one-time bootstrap.");
+    return;
+  }
+
+  try {
+    // Try creating the admin user
+    const cred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_INIT_PASSWORD);
+
+    // Optional profile label
+    try { await updateProfile(cred.user, { displayName: "Admin" }); } catch {}
+
+    // Ensure Firestore profile doc exists
+    try {
+      await setDoc(doc(db, "users", cred.user.uid), {
+        email: ADMIN_EMAIL,
+        name: "Admin",
+        contact: "",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    } catch {}
+
+    alert("✅ Admin account created successfully.\n\nNow set SETUP_MODE=false in app.js and redeploy.");
+    await signOut(auth);
+  } catch (e) {
+    console.error("Bootstrap admin error:", e.code, e.message);
+
+    // If admin already exists, you’ll get auth/email-already-in-use
+    if (e.code === "auth/email-already-in-use") {
+      alert("Admin already exists. Use 'Send Admin Reset Email' (or window.__resetAdmin()) to set a new password.");
+    } else {
+      alert(`Failed to create admin: ${e.code || e.message}`);
+    }
+  }
+}
+
+// --- Send password reset email to the admin (works whether user exists or not) ---
+async function sendAdminReset() {
+  try {
+    await sendPasswordResetEmail(auth, ADMIN_EMAIL);
+    alert(`Password reset email sent to ${ADMIN_EMAIL}.\nOpen the link and set your password (e.g., ${ADMIN_INIT_PASSWORD}).`);
+  } catch (e) {
+    console.error("Reset admin password error:", e.code, e.message);
+    alert(`Failed to send reset email: ${e.code || e.message}`);
+  }
+}
+
+// Wire up buttons if they exist
+bootstrapAdminBtn?.addEventListener("click", bootstrapCreateAdmin);
+resetAdminBtn?.addEventListener("click", sendAdminReset);
+
+// Expose helpers to DevTools console in case you didn't add buttons
+window.__createAdmin = bootstrapCreateAdmin;
+window.__resetAdmin  = sendAdminReset;
+
 // ------------------------
 // DOM Helper
 // ------------------------
