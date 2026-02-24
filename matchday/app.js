@@ -1,4 +1,4 @@
-// 🔹 Firebase config
+// 🔹 Firebase config (your project)
 const firebaseConfig = {
   apiKey: "AIzaSyDkzD-_MAZscUk1OTCTdI9tZHZfL4J_u-0",
   authDomain: "matchday-44a3c.firebaseapp.com",
@@ -24,15 +24,19 @@ document.getElementById("signupBtn").addEventListener("click", () => {
   const email = document.getElementById("emailInput").value;
   const password = document.getElementById("passwordInput").value;
 
+  if(!email || !password) return alert("Enter email and password!");
+
   auth.createUserWithEmailAndPassword(email, password)
     .then(uc => {
-      alert("Sign Up Successful!");
       const user = uc.user;
+      alert("Sign Up Successful!");
+      // Create default player profile
       db.collection("players").doc(user.uid).set({
         email: user.email, position: "", name: "", contact: "",
         team: "", jersey: "", gamesPlayed: 0, goals: 0
       });
-    }).catch(e => alert(e.message));
+    })
+    .catch(err => alert(err.message));
 });
 
 // 🔹 Login
@@ -40,21 +44,22 @@ document.getElementById("loginBtn").addEventListener("click", () => {
   const email = document.getElementById("loginEmail").value;
   const password = document.getElementById("loginPassword").value;
 
+  if(!email || !password) return alert("Enter email and password!");
+
   auth.signInWithEmailAndPassword(email, password)
-    .then(uc => alert("Login Successful!"))
-    .catch(e => alert(e.message));
+    .then(() => alert("Login Successful!"))
+    .catch(err => alert(err.message));
 });
 
-// 🔹 Auth state
+// 🔹 Auth state listener
 auth.onAuthStateChanged(user => {
   if (user) {
     authSection.style.display = "none";
     profileSection.style.display = "block";
     bookSection.style.display = "block";
 
-    // Load profile
     db.collection("players").doc(user.uid).get().then(doc => {
-      if (doc.exists) {
+      if(doc.exists){
         const data = doc.data();
         document.getElementById("nameInput").value = data.name;
         document.getElementById("contactInput").value = data.contact;
@@ -75,7 +80,7 @@ auth.onAuthStateChanged(user => {
 // 🔹 Save Profile
 document.getElementById("saveProfileBtn").addEventListener("click", () => {
   const user = auth.currentUser;
-  if (!user) return alert("Not logged in!");
+  if(!user) return alert("Not logged in!");
   db.collection("players").doc(user.uid).update({
     name: document.getElementById("nameInput").value,
     contact: document.getElementById("contactInput").value,
@@ -88,7 +93,7 @@ document.getElementById("saveProfileBtn").addEventListener("click", () => {
 // 🔹 Book Match Slot
 document.getElementById("bookBtn").addEventListener("click", () => {
   const user = auth.currentUser;
-  if (!user) return alert("Not logged in!");
+  if(!user) return alert("Not logged in!");
   const date = document.getElementById("matchDate").value;
   const time = document.getElementById("matchTime").value;
   const payment = document.getElementById("paymentMethod").value;
