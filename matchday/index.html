@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MatchDay ⚽</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00ff88">
+
+<style>
+:root {
+  --primary: #00ff88;
+  --dark: #0e0e0e;
+  --card: #1a1a1a;
+  --accent: #121212;
+  --highlight: #ffea00;
+}
+
+body {
+  margin:0;
+  font-family:'Poppins',sans-serif;
+  background: linear-gradient(180deg, #0e0e0e, #141414);
+  color:white;
+}
+
+header {
+  background: var(--accent);
+  padding:15px;
+  text-align:center;
+  font-weight:600;
+  font-size:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  border-bottom:1px solid #222;
+}
+
+header img { height:40px; width:40px; }
+
+.container { padding:20px; max-width:500px; margin:auto; }
+
+.match-card { background: var(--card); padding:18px; border-radius:16px; margin-bottom:20px; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
+
+.match-title { font-size:20px; font-weight:600; margin-bottom:10px; }
+.match-info { font-size:14px; opacity:0.8; }
+
+button { width:100%; padding:14px; margin-top:12px; border-radius:12px; border:none; font-weight:600; font-size:15px; cursor:pointer; transition:0.2s; }
+.primary-btn { background: var(--primary); color:black; }
+.primary-btn:hover { transform:scale(1.02); }
+.secondary-btn { background:#2a2a2a; color:white; }
+
+.player-list { margin-top:15px; }
+.player { padding:10px; border-radius:10px; background:#222; margin-bottom:8px; font-size:14px; }
+
+input, select { width:100%; padding:10px; margin:8px 0; border-radius:10px; border:none; }
+img.avatar { width:80px; border-radius:50%; margin-bottom:10px; }
+
+.stats { display:flex; justify-content:space-between; margin-top:5px; font-size:14px; }
+</style>
+</head>
+
+<body>
+<header>
+  <img src="logo.png" alt="MatchDay Logo">
+  ⚽ MatchDay
+</header>
+
+<div class="container">
+
+<!-- Authentication -->
+<div class="match-card" id="authSection">
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+  <button class="primary-btn" onclick="signUp()">Sign Up</button>
+  <button class="secondary-btn" onclick="login()">Login</button>
+</div>
+
+<!-- Booking & Profile Section -->
+<div class="match-card" id="bookingSection" style="display:none;">
+
+  <!-- Booking -->
+  <div class="match-title">Tuesday Night Football</div>
+  <div class="match-info">📅 24 February <br>⏰ 11:00 PM <br>📍 Jaff</div>
+  <select id="paymentMethod">
+    <option value="bKash">bKash</option>
+    <option value="Cash">On-spot Cash</option>
+  </select>
+  <button class="primary-btn" onclick="requestPayment()">💳 I Have Paid</button>
+
+  <button class="secondary-btn" onclick="logout()">Logout</button>
+
+  <!-- Profile -->
+  <h3>🧑 My Profile</h3>
+  <input type="text" id="playerName" placeholder="Full Name">
+  <input type="text" id="playerContact" placeholder="Phone Number">
+  <input type="text" id="playerTeam" placeholder="Team (Optional)">
+  <input type="text" id="playerJersey" placeholder="Jersey Number (Optional)">
+  <select id="playerPosition" required>
+    <option value="">Select Position</option>
+    <option value="Forward">Forward</option>
+    <option value="Midfielder">Midfielder</option>
+    <option value="Defender">Defender</option>
+    <option value="Goalkeeper">Goalkeeper</option>
+  </select>
+  <input type="file" id="playerPhoto">
+  <button class="primary-btn" onclick="updateProfile()">Update Profile</button>
+  <div id="profilePreview" class="player"></div>
+</div>
+
+<!-- Confirmed Players -->
+<div class="match-card">
+  <h3>✅ Confirmed Players</h3>
+  <div id="slots" class="player-list"></div>
+</div>
+
+<!-- Announcements -->
+<div class="match-card">
+  <h3>📢 Announcements</h3>
+  <div id="announcementsList" class="player-list"></div>
+</div>
+
+<!-- Match History -->
+<div class="match-card">
+  <h3>🏟️ Match History</h3>
+  <div id="matchHistoryList" class="player-list"></div>
+</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let isAdmin = false;
+const slotsDiv = document.getElementById("slots");
+
+// ------------------- AUTH -------------------
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    document.getElementById("authSection").style.display = "none";
+    document.getElementById("bookingSection").style.display = "block";
+
+    // Admin check
+    onSnapshot(collection(db, "admins"), snapshot => {
+      snapshot.docs.forEach(docSnap => {
+        if(docSnap.id === user.email) { isAdmin = true; showAdminPanel(); }
+      });
+    });
+
+    loadPlayerProfile(user.email);
+    loadPlayers();
+    loadAnnouncements();
+    loadMatchHistory();
+
+  } else {
+    document.getElementById("authSection").style.display = "block";
+    document.getElementById("bookingSection").style.display = "none";
+  }
+});
+
+window.signUp = () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  createUserWithEmailAndPassword(auth, email, password);
+}
+
+window.login = () => {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  signInWithEmailAndPassword(auth, email, password);
+}
+
+window.logout = () => { signOut(auth); }
+
+// ------------------- BOOKING -------------------
+window.requestPayment = async () => {
+  const user = auth.currentUser;
+  if(!user) return;
+  const method = document.getElementById("paymentMethod").value;
+  const amount = 200; // Fixed payment, change if needed
+  await addDoc(collection(db, "payments"), {email:user.email, status:"requested", method, amount});
+  alert("Payment requested. Waiting for admin confirmation.");
+}
+
+// ------------------- PLAYER PROFILE -------------------
+async function loadPlayerProfile(email) {
+  const profileRef = doc(db,"players",email);
+  onSnapshot(profileRef, docSnap => {
+    if(docSnap.exists()) {
+      const data = docSnap.data();
+      document.getElementById("playerName").value = data.name || "";
+      document.getElementById("playerContact").value = data.contact || "";
+      document.getElementById("playerTeam").value = data.team || "";
+      document.getElementById("playerJersey").value = data.jersey || "";
+      document.getElementById("playerPosition").value = data.position || "";
+      const preview = document.getElementById("profilePreview");
+      preview.innerHTML = "";
+      if(data.photoURL){ const img=document.createElement("img"); img.src=data.photoURL; img.className="avatar"; preview.appendChild(img); }
+      preview.innerHTML += `<p>${data.name || ""}<br>📞 ${data.contact || ""}<br>Team: ${data.team || "-"} Jersey: ${data.jersey || "-"} Position: ${data.position || "-"}</p>`;
+      if(data.stats){ preview.innerHTML += `<div class="stats">Games: ${data.stats.gamesPlayed || 0} Goals: ${data.stats.goals || 0}</div>`; }
+    }
+  });
+}
+
+window.updateProfile = async () => {
+  const user = auth.currentUser;
+  if(!user) return;
+  const name = document.getElementById("playerName").value;
+  const contact = document.getElementById("playerContact").value;
+  const team = document.getElementById("playerTeam").value;
+  const jersey = document.getElementById("playerJersey").value;
+  const position = document.getElementById("playerPosition").value;
+  if(!position){ alert("Please select a position!"); return; }
+  const file = document.getElementById("playerPhoto").files[0];
+
+  let photoURL = "";
+  if(file){
+    const storageRef = ref(storage, "profilePhotos/" + user.email);
+    await uploadBytes(storageRef, file);
+    photoURL = await getDownloadURL(storageRef);
+  }
+
+  const profileRef = doc(db,"players",user.email);
+  await updateDoc(profileRef, {name, contact, team, jersey, position, ...(photoURL && {photoURL})})
+  .catch(async()=>{ await setDoc(profileRef,{name, contact, team, jersey, position, ...(photoURL && {photoURL})}); });
+  alert("Profile updated!");
+}
+
+// ------------------- PLAYERS LIST -------------------
+function loadPlayers() {
+  onSnapshot(collection(db,"players"), snapshot => {
+    slotsDiv.innerHTML = "";
+    let i=1;
+    snapshot.docs.forEach(docSnap => {
+      const data=docSnap.data();
+      const div = document.createElement("div");
+      div.className="player";
+      div.innerHTML = `${i++}. ${data.name || data.email}<br>📞 ${data.contact || ""}<br>Team: ${data.team || "-"} Jersey: ${data.jersey || "-"} Position: ${data.position || "-"}<br>`;
+      if(data.photoURL){ div.innerHTML += `<img src="${data.photoURL}" width="50" class="avatar">`; }
+      if(data.stats){ div.innerHTML += `<div class="stats">Games: ${data.stats.gamesPlayed || 0} Goals: ${data.stats.goals || 0}</div>`; }
+      slotsDiv.appendChild(div);
+    });
+  });
+}
+
+// ------------------- ANNOUNCEMENTS -------------------
+function loadAnnouncements() {
+  const annDiv = document.getElementById("announcementsList");
+  onSnapshot(collection(db,"announcements"), snapshot=>{
+    annDiv.innerHTML="";
+    snapshot.docs.forEach(docSnap=>{
+      const div=document.createElement("div");
+      div.className="player";
+      div.innerText = `${docSnap.data().title}: ${docSnap.data().message}`;
+      annDiv.appendChild(div);
+    });
+  });
+}
+
+// ------------------- MATCH HISTORY -------------------
+function loadMatchHistory() {
+  const histDiv = document.getElementById("matchHistoryList");
+  onSnapshot(collection(db,"matchHistory"), snapshot=>{
+    histDiv.innerHTML="";
+    snapshot.docs.forEach(docSnap=>{
+      const data=docSnap.data();
+      const div=document.createElement("div");
+      div.className="player";
+      div.innerHTML = `📅 ${new Date(data.date).toLocaleString()} | ${data.location}<br>Players: ${data.players.join(", ")}<br>Score: ${data.score}<br>Notes: ${data.notes || ""}`;
+      histDiv.appendChild(div);
+    });
+  });
+}
+
+// ------------------- ADMIN PANEL -------------------
+function showAdminPanel() {
+  const bookingSection = document.getElementById("bookingSection");
+  const adminDiv = document.createElement("div");
+  adminDiv.innerHTML = `<h4>👑 Admin Panel</h4>`;
+  bookingSection.appendChild(adminDiv);
+
+  loadPayments();
+}
+
+function loadPayments() {
+  onSnapshot(collection(db,"payments"), snapshot=>{
+    snapshot.docs.forEach(docSnap=>{
+      if(docSnap.data().status==="requested"){
+        const div=document.createElement("div");
+        div.innerHTML = `<p>${docSnap.data().email} - ${docSnap.data().method} - ${docSnap.data().amount}</p><button onclick="approvePayment('${docSnap.id}','${docSnap.data().email}')">✅ Approve</button>`;
+        document.getElementById("bookingSection").appendChild(div);
+      }
+    });
+  });
+}
+
+window.approvePayment = async(paymentId,email)=>{
+  await updateDoc(doc(db,"payments",paymentId), {status:"approved"});
+  await setDoc(doc(db,"players",email), {stats:{gamesPlayed:0,goals:0,position:"Forward"}, team:"", jersey:""} , {merge:true});
+  alert("Payment approved and player added.");
+}
+</script>
+</body>
+</html>
