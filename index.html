@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MatchDay ⚽</title>
 
-  logo.png
-  styles.css
-  manifest.json
-  <meta name="theme-color" content="#0B1F18" />
+  <meta name="theme-color" content="#0B1F18">
 
-  <!-- Firebase (Modular CDN) -->
-  app.js</script>
+  <!-- CSS -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Favicon / Logo -->
+  <link rel="icon" href="logo.png" type="image/png">
 </head>
 
 <body>
   <header>
-    logo.png
+    <img src="logo.png" class="logo" alt="MatchDay Logo">
     <h1>MatchDay</h1>
   </header>
 
@@ -24,8 +27,8 @@
   <section id="loginSection" class="card">
     <h2>Login</h2>
 
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
 
     <button id="loginBtn">Login</button>
     <button id="signupBtn" class="secondary">Sign Up</button>
@@ -43,11 +46,10 @@
     </div>
 
     <h3>Create Match</h3>
-
-    <input id="matchDate" type="date" />
-    <input id="matchTime" type="time" />
-    <input id="matchLocation" type="text" placeholder="Location" />
-    <input id="matchSlots" type="number" placeholder="Max Slots" min="1" />
+    <input id="matchDate" type="date">
+    <input id="matchTime" type="time">
+    <input id="matchLocation" type="text" placeholder="Location">
+    <input id="matchSlots" type="number" placeholder="Max Slots" min="1">
 
     <select id="matchStatus">
       <option value="open">Open</option>
@@ -58,7 +60,7 @@
     <button id="closeMatchBtn" class="warning">Close Current Match</button>
 
     <h3>Announcements</h3>
-    <input type="text" id="announcementInput" placeholder="Write announcement..." />
+    <input type="text" id="announcementInput" placeholder="Write announcement...">
     <button id="postAnnouncementBtn">Post</button>
 
     <ul id="announcementListAdmin"></ul>
@@ -76,8 +78,8 @@
     </div>
 
     <h3>Your Profile</h3>
-    <input id="playerName" type="text" placeholder="Your Name" />
-    <input id="playerContact" type="text" placeholder="Contact Number" />
+    <input id="playerName" type="text" placeholder="Your Name">
+    <input id="playerContact" type="text" placeholder="Contact Number">
     <button id="saveProfileBtn">Save Profile</button>
 
     <h3>Upcoming Match</h3>
@@ -94,7 +96,7 @@
         Send to bKash: <strong>01623729249</strong>
       </div>
 
-      <input id="paymentRef" type="text" placeholder="bKash TXN ID (Optional)" />
+      <input id="paymentRef" type="text" placeholder="bKash TXN ID (Optional)">
 
       <button id="bookSlotBtn">Book Slot</button>
       <button id="cancelBookingBtn" class="warning">Cancel Booking</button>
@@ -107,7 +109,10 @@
     <ul id="announcementList"></ul>
   </section>
 
-  <!-- SW REGISTER -->
+  <!-- Load App -->
+  <script type="module" src="app.js"></script>
+
+  <!-- Service Worker -->
   <script>
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js");
