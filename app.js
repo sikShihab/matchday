@@ -1,3 +1,4 @@
+
 // =========================================================
 // MATCHDAY — FULL APP (ADMIN + PLAYER)
 // DARK THEME VERSION — HARDCODED ADMIN EMAIL
@@ -17,7 +18,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  updateProfile
+  updateProfile,
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
@@ -72,42 +74,33 @@ enableIndexedDbPersistence(db).catch(() => {
 const ADMIN_EMAIL = "ikshihab2002@gmail.com";
 
 /************************************************************
- * ADMIN BOOTSTRAP (ONE-TIME) — add to existing app.js
+ * ADMIN BOOTSTRAP (ONE-TIME)
  * - Create the admin account with a chosen password (once).
  * - Or send a reset email if the admin already exists.
  * - After successful bootstrap: set SETUP_MODE=false and redeploy.
  ************************************************************/
 
-// Already in your file: const ADMIN_EMAIL = "ikshihab2002@gmail.com";
-// Keep it as-is. Now add:
-const SETUP_MODE = true;                     // ⛔ Set TRUE only for the one-time bootstrap. Then set to FALSE.
-const ADMIN_INIT_PASSWORD = "01012002pdl";   // The desired admin password
+// 🚨 Set TRUE only for one-time bootstrap; then set to FALSE and redeploy.
+const SETUP_MODE = true;
+const ADMIN_INIT_PASSWORD = "01012002pdl";   // desired admin password
 
-// Optional: If you added buttons in index.html with these IDs, we'll wire them.
-// If not, you can call the functions from console: window.__createAdmin(), window.__resetAdmin()
+// Optional buttons (add to index.html if desired)
 const bootstrapAdminBtn = document.getElementById("bootstrapAdminBtn");
 const resetAdminBtn     = document.getElementById("resetAdminBtn");
 
-// Show/Hide the bootstrap button based on SETUP_MODE (safe guard)
 if (bootstrapAdminBtn) {
   bootstrapAdminBtn.style.display = SETUP_MODE ? "block" : "none";
 }
 
-// --- One-time Admin Creation (runs only if SETUP_MODE === true) ---
+// One-time Admin Creation
 async function bootstrapCreateAdmin() {
   if (!SETUP_MODE) {
     alert("Setup mode is disabled. Edit app.js to enable (SETUP_MODE=true) for one-time bootstrap.");
     return;
   }
-
   try {
-    // Try creating the admin user
     const cred = await createUserWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_INIT_PASSWORD);
-
-    // Optional profile label
     try { await updateProfile(cred.user, { displayName: "Admin" }); } catch {}
-
-    // Ensure Firestore profile doc exists
     try {
       await setDoc(doc(db, "users", cred.user.uid), {
         email: ADMIN_EMAIL,
@@ -117,13 +110,12 @@ async function bootstrapCreateAdmin() {
         updatedAt: serverTimestamp()
       }, { merge: true });
     } catch {}
+    alert("✅ Admin account created successfully.
 
-    alert("✅ Admin account created successfully.\n\nNow set SETUP_MODE=false in app.js and redeploy.");
+Now set SETUP_MODE=false in app.js and redeploy.");
     await signOut(auth);
   } catch (e) {
     console.error("Bootstrap admin error:", e.code, e.message);
-
-    // If admin already exists, you’ll get auth/email-already-in-use
     if (e.code === "auth/email-already-in-use") {
       alert("Admin already exists. Use 'Send Admin Reset Email' (or window.__resetAdmin()) to set a new password.");
     } else {
@@ -132,22 +124,22 @@ async function bootstrapCreateAdmin() {
   }
 }
 
-// --- Send password reset email to the admin (works whether user exists or not) ---
+// Send password reset email for admin
 async function sendAdminReset() {
   try {
     await sendPasswordResetEmail(auth, ADMIN_EMAIL);
-    alert(`Password reset email sent to ${ADMIN_EMAIL}.\nOpen the link and set your password (e.g., ${ADMIN_INIT_PASSWORD}).`);
+    alert(`Password reset email sent to ${ADMIN_EMAIL}.
+Open the link and set your password (e.g., ${ADMIN_INIT_PASSWORD}).`);
   } catch (e) {
     console.error("Reset admin password error:", e.code, e.message);
     alert(`Failed to send reset email: ${e.code || e.message}`);
   }
 }
 
-// Wire up buttons if they exist
 bootstrapAdminBtn?.addEventListener("click", bootstrapCreateAdmin);
 resetAdminBtn?.addEventListener("click", sendAdminReset);
 
-// Expose helpers to DevTools console in case you didn't add buttons
+// Expose helpers for DevTools
 window.__createAdmin = bootstrapCreateAdmin;
 window.__resetAdmin  = sendAdminReset;
 
@@ -224,19 +216,14 @@ function showOnly(section) {
   if (section)         section.hidden = false;
 }
 
-function notify(msg) {
-  // Replace with a nicer toast if you like
-  alert(msg);
-}
+function notify(msg) { alert(msg); }
 
 function formatTS(ts) {
   try {
     if (!ts) return "";
     if (typeof ts.toDate === "function") return ts.toDate().toLocaleString();
     return new Date(ts).toLocaleString();
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
 
 // ------------------------
@@ -245,24 +232,16 @@ function formatTS(ts) {
 onAuthStateChanged(auth, async (user) => {
   currentUser = user || null;
 
-  if (!user) {
-    // Signed out → show login
-    showOnly(loginSection);
-    return;
-  }
+  if (!user) { showOnly(loginSection); return; }
 
-  // Role
   isAdmin = user.email === ADMIN_EMAIL;
 
-  // Ensure profile exists
   await ensureProfile(user);
 
-  // Listeners
   startAnnouncementsListener();
   await loadUpcomingMatch();
   await loadProfile();
 
-  // Show the right dashboard
   showOnly(isAdmin ? adminDashboard : playerDashboard);
 });
 
@@ -290,12 +269,8 @@ loginBtn?.addEventListener("click", async () => {
   const email = (emailEl.value || "").trim();
   const password = (passwordEl.value || "").trim();
   if (!email || !password) return notify("Enter email and password.");
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (e) {
-    console.error(e);
-    notify("Login failed.");
-  }
+  try { await signInWithEmailAndPassword(auth, email, password); }
+  catch (e) { console.error(e); notify("Login failed."); }
 });
 
 signupBtn?.addEventListener("click", async () => {
@@ -314,10 +289,7 @@ signupBtn?.addEventListener("click", async () => {
       updatedAt: serverTimestamp()
     }, { merge: true });
     notify("Account created!");
-  } catch (e) {
-    console.error(e);
-    notify("Sign-up failed.");
-  }
+  } catch (e) { console.error(e); notify("Sign-up failed."); }
 });
 
 googleBtn?.addEventListener("click", async () => {
@@ -325,15 +297,9 @@ googleBtn?.addEventListener("click", async () => {
     const provider = new GoogleAuthProvider();
     const res = await signInWithPopup(auth, provider);
     const gUser = res.user;
-    if (gUser.email === ADMIN_EMAIL) {
-      await signOut(auth);
-      return notify("Admin cannot use Google login.");
-    }
+    if (gUser.email === ADMIN_EMAIL) { await signOut(auth); return notify("Admin cannot use Google login."); }
     await ensureProfile(gUser);
-  } catch (e) {
-    console.error(e);
-    notify("Google login failed.");
-  }
+  } catch (e) { console.error(e); notify("Google login failed."); }
 });
 
 logoutBtn?.addEventListener("click", () => signOut(auth));
@@ -356,9 +322,7 @@ saveProfileBtn?.addEventListener("click", async () => {
   if (!currentUser) return;
   const name    = (playerName.value || "").trim();
   const contact = (playerContact.value || "").trim();
-  await updateDoc(doc(db, "users", currentUser.uid), {
-    name, contact, updatedAt: serverTimestamp()
-  });
+  await updateDoc(doc(db, "users", currentUser.uid), { name, contact, updatedAt: serverTimestamp() });
   notify("Profile saved.");
 });
 
@@ -385,11 +349,7 @@ postAnnouncementBtn?.addEventListener("click", async () => {
   if (!isAdmin) return notify("Admins only.");
   const text = (announcementInput.value || "").trim();
   if (!text) return;
-  await addDoc(collection(db, "announcements"), {
-    text,
-    createdAt: serverTimestamp(),
-    createdBy: currentUser?.uid || ""
-  });
+  await addDoc(collection(db, "announcements"), { text, createdAt: serverTimestamp(), createdBy: currentUser?.uid || "" });
   announcementInput.value = "";
 });
 
@@ -423,10 +383,7 @@ async function loadUpcomingMatch() {
   if (matchInfoPlayer) matchInfoPlayer.textContent = info;
   if (matchInfoAdmin)  matchInfoAdmin.textContent  = info;
 
-  // Start real-time bookings for this match
   startBookingsListener();
-
-  // Update booking controls for current user
   updateBookingUI();
 }
 
@@ -445,13 +402,9 @@ createMatchBtn?.addEventListener("click", async () => {
     return notify("Please fill all match fields with valid values.");
   }
 
-  await addDoc(collection(db, "matches"), {
-    date, time, location, slots, status,
-    createdAt: serverTimestamp()
-  });
+  await addDoc(collection(db, "matches"), { date, time, location, slots, status, createdAt: serverTimestamp() });
 
   notify("Match created.");
-  // Optional: clear inputs
   if (matchDate) matchDate.value = "";
   if (matchTime) matchTime.value = "";
   if (matchLocation) matchLocation.value = "";
@@ -464,10 +417,7 @@ createMatchBtn?.addEventListener("click", async () => {
 closeMatchBtn?.addEventListener("click", async () => {
   if (!isAdmin) return notify("Admins only.");
   if (!currentMatchId) return notify("No open match to close.");
-  await updateDoc(doc(db, "matches", currentMatchId), {
-    status: "closed",
-    updatedAt: serverTimestamp()
-  });
+  await updateDoc(doc(db, "matches", currentMatchId), { status: "closed", updatedAt: serverTimestamp() });
   notify("Match closed.");
   await loadUpcomingMatch();
 });
@@ -477,13 +427,9 @@ closeMatchBtn?.addEventListener("click", async () => {
 // ------------------------
 function startBookingsListener() {
   if (!currentMatchId) return;
-
   if (unsubscribeBookings) unsubscribeBookings();
 
-  const qRef = query(
-    collection(db, "matches", currentMatchId, "bookings"),
-    orderBy("createdAt", "asc")
-  );
+  const qRef = query(collection(db, "matches", currentMatchId, "bookings"), orderBy("createdAt", "asc"));
 
   unsubscribeBookings = onSnapshot(qRef, async (snap) => {
     if (bookedPlayersList) bookedPlayersList.innerHTML = "";
@@ -494,14 +440,12 @@ function startBookingsListener() {
       const userSnap = await getDoc(doc(db, "users", b.uid));
       const u = userSnap.exists() ? userSnap.data() : { name: b.uid, contact: "" };
 
-      // Player-facing list
       if (bookedPlayersList) {
         const li = document.createElement("li");
         li.textContent = `${u.name || b.uid} — ${u.contact || ""}`;
         bookedPlayersList.appendChild(li);
       }
 
-      // Admin list with Kick button
       if (isAdmin && bookingListAdmin) {
         const div = document.createElement("div");
         div.className = "bookingItem";
@@ -532,17 +476,13 @@ function startBookingsListener() {
 // Booking UI state
 // ------------------------
 async function updateBookingUI() {
-  if (!currentUser || !currentMatchId) {
-    if (bookingOptions) bookingOptions.hidden = true;
-    return;
-  }
+  if (!currentUser || !currentMatchId) { if (bookingOptions) bookingOptions.hidden = true; return; }
 
   const myRef = doc(db, "matches", currentMatchId, "bookings", currentUser.uid);
   const snap = await getDoc(myRef);
 
   if (bookingOptions) bookingOptions.hidden = false;
 
-  // Toggle bKash info
   if (bkashInfo && paymentRef && paymentMethod) {
     const isBkash = paymentMethod.value === "bkash";
     bkashInfo.style.display = isBkash ? "block" : "none";
@@ -550,16 +490,10 @@ async function updateBookingUI() {
   }
 
   if (snap.exists()) {
-    if (bookSlotBtn) {
-      bookSlotBtn.disabled = true;
-      bookSlotBtn.textContent = "Already Booked";
-    }
+    if (bookSlotBtn) { bookSlotBtn.disabled = true; bookSlotBtn.textContent = "Already Booked"; }
     if (cancelBookingBtn) cancelBookingBtn.disabled = false;
   } else {
-    if (bookSlotBtn) {
-      bookSlotBtn.disabled = false;
-      bookSlotBtn.textContent = "Book Slot";
-    }
+    if (bookSlotBtn) { bookSlotBtn.disabled = false; bookSlotBtn.textContent = "Book Slot"; }
     if (cancelBookingBtn) cancelBookingBtn.disabled = true;
   }
 }
@@ -577,8 +511,6 @@ bookSlotBtn?.addEventListener("click", async () => {
   const refID  = (paymentRef?.value || "").trim();
 
   try {
-    // Client-side transaction (best-effort). For heavy concurrency,
-    // move capacity enforcement into a Cloud Function.
     await runTransaction(db, async (tx) => {
       const matchRef = doc(db, "matches", currentMatchId);
       const mSnap = await tx.get(matchRef);
@@ -587,7 +519,6 @@ bookSlotBtn?.addEventListener("click", async () => {
       const m = mSnap.data();
       if (m.status !== "open") throw new Error("Match is closed.");
 
-      // Count current bookings (approximate)
       const all = await getDocs(collection(db, "matches", currentMatchId, "bookings"));
       if (all.size >= (m.slots || 0)) throw new Error("No slots left.");
 
@@ -595,20 +526,12 @@ bookSlotBtn?.addEventListener("click", async () => {
       const mySnap = await tx.get(myRef);
       if (mySnap.exists()) throw new Error("You already booked.");
 
-      tx.set(myRef, {
-        uid: currentUser.uid,
-        paymentMethod: method,
-        paymentRef: refID,
-        createdAt: serverTimestamp()
-      });
+      tx.set(myRef, { uid: currentUser.uid, paymentMethod: method, paymentRef: refID, createdAt: serverTimestamp() });
     });
 
     notify("Booking successful!");
     updateBookingUI();
-  } catch (e) {
-    console.error(e);
-    notify(e.message || String(e) || "Booking failed.");
-  }
+  } catch (e) { console.error(e); notify(e.message || String(e) || "Booking failed."); }
 });
 
 // ------------------------
