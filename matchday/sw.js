@@ -1,23 +1,40 @@
-const cacheName = "matchday-cache-v1";
-const assetsToCache = [
+const CACHE_NAME = "matchday-v3";
+const ASSETS = [
   "/",
   "/index.html",
   "/styles.css",
   "/app.js",
-  "/logo.png",
-  "/manifest.json"
+  "/manifest.json",
+  "/logo.png"
 ];
 
-self.addEventListener("install", event => {
-  event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(assetsToCache)));
+self.addEventListener("install", (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+  self.skipWaiting();
 });
 
-self.addEventListener("activate", event => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.map(key => key !== cacheName ? caches.delete(key) : null)))
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
+    )
   );
+  self.clients.claim();
 });
 
-self.addEventListener("fetch", event => {
-  event.respondWith(caches.match(event.request).then(res => res || fetch(event.request)));
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      const fetchNew = fetch(req)
+        .then((res) => {
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, res.clone()));
+          return res;
+        })
+        .catch(() => cached);
+
+      return cached || fetchNew;
+    })
+  );
 });
