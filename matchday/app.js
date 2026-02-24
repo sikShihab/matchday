@@ -1,6 +1,6 @@
 // Firebase setup
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "YOUR_API_KEY", // Replace with your Firebase API key
   authDomain: "matchday-44a3c.firebaseapp.com",
   projectId: "matchday-44a3c",
   storageBucket: "matchday-44a3c.appspot.com",
@@ -12,8 +12,8 @@ const db = firebase.firestore();
 
 let currentUser = null;
 
-// Hardcoded admin email for simplicity
-const adminEmail = "admin@test.com";
+// Admin email
+const adminEmail = "ikshihab2002@gmail.com";
 
 // --- Login ---
 document.getElementById("loginBtn").addEventListener("click", async () => {
@@ -93,7 +93,6 @@ function showPlayerDashboard(){
   document.getElementById("playerDashboard").style.display="block";
 
   const playerId = currentUser.uid;
-  // Load profile
   document.getElementById("playerName").value = currentUser.name;
   document.getElementById("playerContact").value = currentUser.contact;
 
@@ -136,7 +135,6 @@ async function loadUpcomingMatch(){
     loadUpcomingMatch();
   };
 
-  // Show who booked
   const bookingsSnap = await db.collection("bookings").where("matchId","==",matchSnap.docs[0].id).get();
   let count = 1;
   bookingsSnap.forEach(async doc => {
