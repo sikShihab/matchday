@@ -1,117 +1,120 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MatchDay ⚽</title>
+:root {
+  --bg: #0B1F18;
+  --card: #0E2F23;
+  --primary: #8CE9C3;
+  --text: #E8FFF6;
+  --muted: #88A097;
+  --danger: #D64545;
+  --warning: #C68B00;
+  --google: #EA4335;
+  --radius: 10px;
+}
 
-  <link rel="icon" href="logo.png" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0B1F18" />
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", sans-serif;
+  margin: 0 auto;
+  padding: 20px;
+  max-width: 900px;
+}
 
-  <!-- Firebase (Modular CDN) -->
-  <script type="module" src="app.js"></script>
-</head>
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
 
-<body>
-  <header>
-    <img src="logo.png" alt="MatchDay Logo" class="logo" />
-    <h1>MatchDay</h1>
-  </header>
+.logo {
+  width: 80px;
+}
 
-  <!-- LOGIN SECTION -->
-  <section id="loginSection" class="card">
-    <h2>Login</h2>
+h1 {
+  margin-top: 10px;
+  color: var(--primary);
+}
 
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
+.card {
+  background: var(--card);
+  padding: 20px;
+  border-radius: var(--radius);
+  box-shadow: 0 0 25px rgba(0, 255, 170, 0.08);
+  margin-bottom: 20px;
+}
 
-    <button id="loginBtn">Login</button>
-    <button id="signupBtn" class="secondary">Sign Up</button>
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: var(--radius);
+  border: 1px solid #1E4A39;
+  background: #0A1C15;
+  color: var(--text);
+}
 
-    <div class="divider">OR</div>
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  background: var(--primary);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: #0B1F18;
+  font-weight: 600;
+}
 
-    <button id="googleSignInBtn" class="google">Continue with Google</button>
-  </section>
+button:hover {
+  opacity: 0.9;
+}
 
-  <!-- ADMIN DASHBOARD -->
-  <section id="adminDashboard" class="card dashboard" hidden>
-    <div class="topbar">
-      <h2>Admin Dashboard</h2>
-      <button id="logoutBtn" class="danger small">Logout</button>
-    </div>
+button.secondary {
+  background: #174F3A;
+  color: var(--primary);
+}
 
-    <h3>Create Match</h3>
+button.google {
+  background: var(--google);
+  color: white;
+}
 
-    <input id="matchDate" type="date" />
-    <input id="matchTime" type="time" />
-    <input id="matchLocation" type="text" placeholder="Location" />
-    <input id="matchSlots" type="number" placeholder="Max Slots" min="1" />
-    
-    <select id="matchStatus">
-      <option value="open">Open</option>
-      <option value="closed">Closed</option>
-    </select>
+button.warning {
+  background: var(--warning);
+  color: #000;
+}
 
-    <button id="createMatchBtn">Create Match</button>
-    <button id="closeMatchBtn" class="warning">Close Current Match</button>
+button.danger {
+  background: var(--danger);
+}
 
-    <h3>Announcements</h3>
-    <input type="text" id="announcementInput" placeholder="Write announcement..." />
-    <button id="postAnnouncementBtn">Post</button>
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-    <ul id="announcementListAdmin"></ul>
+ul {
+  list-style: none;
+  padding: 0;
+}
 
-    <h3>Bookings</h3>
-    <div id="matchInfoAdmin" class="muted"></div>
-    <div id="bookingListAdmin"></div>
-  </section>
+.bookingItem {
+  padding: 10px;
+  margin: 10px 0;
+  background: #0A1C15;
+  border-radius: var(--radius);
+  border: 1px solid #1E4A39;
+}
 
-  <!-- PLAYER DASHBOARD -->
-  <section id="playerDashboard" class="card dashboard" hidden>
-    <div class="topbar">
-      <h2>Player Dashboard</h2>
-      <button id="logoutBtn2" class="danger small">Logout</button>
-    </div>
+.muted {
+  color: var(--muted);
+}
 
-    <h3>Your Profile</h3>
-    <input id="playerName" type="text" placeholder="Your Name" />
-    <input id="playerContact" type="text" placeholder="Contact Number" />
-    <button id="saveProfileBtn">Save Profile</button>
+.smallText {
+  font-size: 13px;
+}
 
-    <h3>Upcoming Match</h3>
-    <div id="matchInfoPlayer" class="muted"></div>
-
-    <div id="bookingOptions" hidden>
-      <label>Payment Method</label>
-      <select id="paymentMethod">
-        <option value="bkash">bKash</option>
-        <option value="onSpot">On Spot Cash</option>
-      </select>
-
-      <div id="bkashInfo" class="muted smallText">
-        Send to bKash: <strong>01623729249</strong>
-      </div>
-
-      <input id="paymentRef" type="text" placeholder="bKash TXN ID (Optional)" />
-
-      <button id="bookSlotBtn">Book Slot</button>
-      <button id="cancelBookingBtn" class="warning">Cancel Booking</button>
-    </div>
-
-    <h3>Who Booked</h3>
-    <ul id="bookedPlayersList"></ul>
-
-    <h3>Announcements</h3>
-    <ul id="announcementList"></ul>
-  </section>
-
-  <!-- SW REGISTER -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js");
-    }
-  </script>
-</body>
-</html>
+.divider {
+  text-align: center;
+  color: var(--muted);
+  margin: 10px 0;
+}
