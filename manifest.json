@@ -1,12 +1,15 @@
 {
+  "id": "/?source=pwa",
   "name": "MatchDay ⚽",
   "short_name": "MatchDay",
-  "description": "Book your football match slots easily",
+  "description": "Book your football match slots easily.",
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0B1F18",
   "theme_color": "#0B1F18",
+  "categories": ["sports", "productivity", "social"],
   "icons": [
     {
       "src": "logo.png",
@@ -18,5 +21,20 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Upcoming Match",
+      "short_name": "Match",
+      "description": "View the next upcoming match",
+      "url": "/index.html#match"
+    },
+    {
+      "name": "Announcements",
+      "short_name": "News",
+      "description": "Read the latest announcements",
+      "url": "/index.html#announcements"
+    }
+  ],
+  "prefer_related_applications": false
 }
