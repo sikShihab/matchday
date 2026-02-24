@@ -1,1 +1,117 @@
-<html></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MatchDay ⚽</title>
+
+  logo.png
+  styles.css
+  manifest.json
+  <meta name="theme-color" content="#0B1F18" />
+
+  <!-- Firebase (Modular CDN) -->
+  app.js</script>
+</head>
+
+<body>
+  <header>
+    logo.png
+    <h1>MatchDay</h1>
+  </header>
+
+  <!-- LOGIN SECTION -->
+  <section id="loginSection" class="card">
+    <h2>Login</h2>
+
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Password" />
+
+    <button id="loginBtn">Login</button>
+    <button id="signupBtn" class="secondary">Sign Up</button>
+
+    <div class="divider">OR</div>
+
+    <button id="googleSignInBtn" class="google">Continue with Google</button>
+  </section>
+
+  <!-- ADMIN DASHBOARD -->
+  <section id="adminDashboard" class="card dashboard" hidden>
+    <div class="topbar">
+      <h2>Admin Dashboard</h2>
+      <button id="logoutBtn" class="danger small">Logout</button>
+    </div>
+
+    <h3>Create Match</h3>
+
+    <input id="matchDate" type="date" />
+    <input id="matchTime" type="time" />
+    <input id="matchLocation" type="text" placeholder="Location" />
+    <input id="matchSlots" type="number" placeholder="Max Slots" min="1" />
+
+    <select id="matchStatus">
+      <option value="open">Open</option>
+      <option value="closed">Closed</option>
+    </select>
+
+    <button id="createMatchBtn">Create Match</button>
+    <button id="closeMatchBtn" class="warning">Close Current Match</button>
+
+    <h3>Announcements</h3>
+    <input type="text" id="announcementInput" placeholder="Write announcement..." />
+    <button id="postAnnouncementBtn">Post</button>
+
+    <ul id="announcementListAdmin"></ul>
+
+    <h3>Bookings</h3>
+    <div id="matchInfoAdmin" class="muted"></div>
+    <div id="bookingListAdmin"></div>
+  </section>
+
+  <!-- PLAYER DASHBOARD -->
+  <section id="playerDashboard" class="card dashboard" hidden>
+    <div class="topbar">
+      <h2>Player Dashboard</h2>
+      <button id="logoutBtn2" class="danger small">Logout</button>
+    </div>
+
+    <h3>Your Profile</h3>
+    <input id="playerName" type="text" placeholder="Your Name" />
+    <input id="playerContact" type="text" placeholder="Contact Number" />
+    <button id="saveProfileBtn">Save Profile</button>
+
+    <h3>Upcoming Match</h3>
+    <div id="matchInfoPlayer" class="muted"></div>
+
+    <div id="bookingOptions" hidden>
+      <label>Payment Method</label>
+      <select id="paymentMethod">
+        <option value="bkash">bKash</option>
+        <option value="onSpot">On Spot Cash</option>
+      </select>
+
+      <div id="bkashInfo" class="muted smallText">
+        Send to bKash: <strong>01623729249</strong>
+      </div>
+
+      <input id="paymentRef" type="text" placeholder="bKash TXN ID (Optional)" />
+
+      <button id="bookSlotBtn">Book Slot</button>
+      <button id="cancelBookingBtn" class="warning">Cancel Booking</button>
+    </div>
+
+    <h3>Who Booked</h3>
+    <ul id="bookedPlayersList"></ul>
+
+    <h3>Announcements</h3>
+    <ul id="announcementList"></ul>
+  </section>
+
+  <!-- SW REGISTER -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js");
+    }
+  </script>
+</body>
+</html>
